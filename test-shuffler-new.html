@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Test Shuffler</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#64748b; --faint:#94a3b8; --line:#e2e8f0;
+    --bg:#f1f5f9; --card:#ffffff; --accent:#4338ca; --accent-dark:#3730a3;
+    --ok:#059669; --ok-bg:#ecfdf5; --ok-line:#6ee7b7; --warn-bg:#fef3c7; --warn:#92400e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5}
+  header{background:var(--card);border-bottom:1px solid var(--line)}
+  .wrap{max-width:860px;margin:0 auto;padding:0 24px}
+  .head-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+  h1{font-size:18px;margin:0;letter-spacing:-.01em}
+  .sub{font-size:14px;color:var(--muted);margin:2px 0 0}
+  main{padding:32px 0}
+  .link{background:none;border:0;color:var(--muted);font-size:14px;cursor:pointer}
+  .link:hover{color:var(--ink)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+  .dropzone{display:block;cursor:pointer;border:2px dashed var(--line);border-radius:14px;
+    background:var(--card);padding:56px 24px;text-align:center;transition:.15s}
+  .dropzone:hover,.dropzone.drag{border-color:#818cf8;background:#eef2ff66}
+  .dz-main{font-weight:600;color:#334155}
+  .dz-sub{font-size:14px;color:var(--muted);margin-top:4px}
+  .note{font-size:12px;color:var(--faint);text-align:center;margin-top:8px}
+  .alert{margin-top:24px;border:1px solid #fcd34d;background:var(--warn-bg);color:var(--warn);
+    border-radius:10px;padding:12px 16px;font-size:14px}
+  details{margin-top:16px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:16px}
+  summary{cursor:pointer;font-size:14px;font-weight:500;color:var(--muted)}
+  pre{margin:12px 0 0;max-height:260px;overflow:auto;white-space:pre-wrap;font-size:12px;color:#475569}
+  .help{margin-top:32px;font-size:14px;color:#475569}
+  .help b{color:#1e293b}
+  code{background:#eef2ff;color:#4338ca;padding:1px 5px;border-radius:4px;font-size:13px}
+  .row{display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+  .count b{color:var(--ink)}
+  .badge{background:var(--warn-bg);color:var(--warn);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:500}
+  select,input[type=text],input[type=number]{border:1px solid #cbd5e1;border-radius:8px;
+    padding:6px 10px;font:inherit;font-size:14px;background:#fff}
+  input[type=number]{width:64px}
+  input[type=text]{width:180px}
+  .muted{color:var(--muted)}
+  .q{margin-top:12px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:16px}
+  .q.excluded{opacity:.5}
+  .q-top{display:flex;gap:12px;align-items:flex-start}
+  .q-stem{font-weight:500}
+  .choices{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+  .choice{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;
+    border-radius:8px;padding:5px 8px;font:inherit;font-size:14px;color:#334155;cursor:pointer}
+  .choice:hover{background:#f8fafc}
+  .choice.correct{background:var(--ok-bg);color:#065f46;box-shadow:inset 0 0 0 1px var(--ok-line)}
+  .pill{flex:none;width:20px;height:20px;border-radius:999px;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:600;background:#e2e8f0;color:#475569}
+  .choice.correct .pill{background:var(--ok);color:#fff}
+  .unmarked{font-size:12px;color:#b45309;margin-top:4px}
+  .bar{position:sticky;bottom:0;margin-top:24px;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:16px;box-shadow:0 -4px 12px #0f172a0f}
+  label.inline{display:flex;align-items:center;gap:8px;font-size:14px}
+  .btn{border:0;border-radius:8px;padding:9px 18px;font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent-dark)}
+  .btn-primary:disabled{opacity:.4;cursor:default}
+  .btn-ghost{background:#fff;border:1px solid #cbd5e1;color:#334155}
+  .btn-ghost:hover{background:#f8fafc}
+  .spacer{margin-left:auto}
+  .out-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:24px}
+  .exam{font-family:Georgia,'Times New Roman',serif}
+  .sheet{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:32px;margin-bottom:24px;
+    box-shadow:0 1px 2px #0f172a0d}
+  .sheet-head{display:flex;align-items:baseline;justify-content:space-between;
+    border-bottom:1px solid #cbd5e1;padding-bottom:12px;margin-bottom:24px}
+  .sheet-title{font-size:20px;font-weight:700}
+  .exam ol{margin:0;padding-left:0;list-style:none}
+  .exam li{margin-bottom:18px}
+  .exam .echoices{margin-top:6px;padding-left:20px}
+  .exam .echoices div{margin-bottom:3px}
+  .keygrid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .keycols{display:grid;grid-template-columns:repeat(5,1fr);gap:2px 8px;font-size:14px}
+  @media(max-width:560px){.keygrid{grid-template-columns:1fr}}
+  @media print{
+    .no-print{display:none!important}
+    body,header{background:#fff}
+    .wrap{max-width:none;padding:0}
+    .sheet{break-before:page}
+    .sheet:first-of-type{break-before:auto}
+    .sheet{border:0;box-shadow:none;padding:0;margin:0}
+    @page{margin:.65in}
+    .keep{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<header class="no-print">
+  <div class="wrap head-row">
+    <div>
+      <h1>Test shuffler</h1>
+      <p class="sub">Upload a Word file, shuffle questions and choices, print versions with answer keys.</p>
+    </div>
+    <button id="startover" class="link" style="display:none">Start over</button>
+  </div>
+</header>
+<main class="wrap"><div id="app"></div></main>
+
+<script>
+"use strict";
+
+/* ---------------- parsing ---------------- */
+var CHOICE_RE = /^\s*\*?\s*\(?\s*([A-Ha-h])\s*[).:\-]\s*(.*)$/;
+var ANSWER_RE = /^\s*(?:correct answer|answer|ans|correct|key)\s*[:.\-)]?\s*([A-Ha-h])\b/i;
+var QNUM_RE   = /^\s*\d+\s*[).:\-]\s*/;
+var W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+var LETTERS = "ABCDEFGH";
+function vLabel(i){ return LETTERS[i] || ("V" + (i + 1)); }
+
+/* --- read the .docx (a zip of XML) and pull bold straight from the XML.
+   This catches bold whether applied directly (Ctrl+B) or inherited from a
+   Word paragraph/character style, which HTML converters silently drop. --- */
+async function inflateRaw(u8){
+  var stream = new Response(u8).body.pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+function readZipEntries(bytes, names){
+  var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  var u16 = function(o){ return dv.getUint16(o, true); };
+  var u32 = function(o){ return dv.getUint32(o, true); };
+  var eocd = -1;
+  for(var i = bytes.length - 22; i >= 0; i--){ if(u32(i) === 0x06054b50){ eocd = i; break; } }
+  if(eocd < 0) throw new Error("Not a zip/.docx file");
+  var count = u16(eocd + 10);
+  var p = u32(eocd + 16);
+  var want = {}; names.forEach(function(n){ want[n] = true; });
+  var out = {};
+  for(var n = 0; n < count; n++){
+    if(u32(p) !== 0x02014b50) break;
+    var method = u16(p + 10);
+    var compSize = u32(p + 20);
+    var nameLen = u16(p + 28);
+    var extraLen = u16(p + 30);
+    var commentLen = u16(p + 32);
+    var localOff = u32(p + 42);
+    var name = new TextDecoder().decode(bytes.slice(p + 46, p + 46 + nameLen));
+    if(want[name]) out[name] = { method:method, compSize:compSize, localOff:localOff };
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  return out;
+}
+async function extractXml(bytes, entry){
+  var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  var u16 = function(o){ return dv.getUint16(o, true); };
+  var u32 = function(o){ return dv.getUint32(o, true); };
+  if(u32(entry.localOff) !== 0x04034b50) throw new Error("bad local header");
+  var nameLen = u16(entry.localOff + 26);
+  var extraLen = u16(entry.localOff + 28);
+  var start = entry.localOff + 30 + nameLen + extraLen;
+  var data = bytes.slice(start, start + entry.compSize);
+  var raw = entry.method === 0 ? data : await inflateRaw(data);
+  return new TextDecoder("utf-8").decode(raw);
+}
+function childByName(el, name){
+  if(!el) return undefined;
+  return Array.prototype.find.call(el.children, function(c){
+    return c.localName === name && c.namespaceURI === W;
+  });
+}
+function boldFromRpr(rpr){
+  var b = childByName(rpr, "b");
+  if(!b) return undefined;
+  var v = b.getAttributeNS(W, "val");
+  if(v == null) return true;
+  return ["0","false","off","none"].indexOf(v.toLowerCase()) === -1;
+}
+function buildStyleMap(stylesXml){
+  var map = {};
+  if(!stylesXml) return map;
+  var doc = new DOMParser().parseFromString(stylesXml, "application/xml");
+  var styles = doc.getElementsByTagNameNS(W, "style");
+  for(var i = 0; i < styles.length; i++){
+    var s = styles[i];
+    var id = s.getAttributeNS(W, "styleId");
+    if(!id) continue;
+    var basedOn = childByName(s, "basedOn");
+    map[id] = {
+      bold: boldFromRpr(childByName(s, "rPr")),
+      basedOn: basedOn ? basedOn.getAttributeNS(W, "val") : null
+    };
+  }
+  return map;
+}
+function resolveStyleBold(id, map){
+  var cur = id, depth = 0;
+  while(cur && map[cur] && depth < 25){
+    if(map[cur].bold !== undefined) return map[cur].bold;
+    cur = map[cur].basedOn; depth++;
+  }
+  return undefined;
+}
+function readDocParagraphs(docXml, styleMap){
+  var doc = new DOMParser().parseFromString(docXml, "application/xml");
+  var ps = doc.getElementsByTagNameNS(W, "p");
+  var out = [];
+  for(var i = 0; i < ps.length; i++){
+    var p = ps[i];
+    var pPr = childByName(p, "pPr");
+    var pStyleEl = childByName(pPr, "pStyle");
+    var pStyleId = pStyleEl ? pStyleEl.getAttributeNS(W, "val") : null;
+    var runs = p.getElementsByTagNameNS(W, "r");
+    var text = "", bold = false;
+    for(var j = 0; j < runs.length; j++){
+      var r = runs[j];
+      var ts = r.getElementsByTagNameNS(W, "t");
+      var rtext = "";
+      for(var k = 0; k < ts.length; k++) rtext += ts[k].textContent || "";
+      if(!rtext) continue;
+      text += rtext;
+      var rPr = childByName(r, "rPr");
+      var rb = boldFromRpr(rPr);
+      if(rb === undefined){
+        var rStyleEl = childByName(rPr, "rStyle");
+        var rStyleId = rStyleEl ? rStyleEl.getAttributeNS(W, "val") : null;
+        if(rStyleId) rb = resolveStyleBold(rStyleId, styleMap);
+      }
+      if(rb === undefined && pStyleId) rb = resolveStyleBold(pStyleId, styleMap);
+      if(rb === true && rtext.trim()) bold = true;
+    }
+    var clean = text.replace(/\s+/g, " ").trim();
+    if(clean) out.push({ text:clean, bold:bold });
+  }
+  return out;
+}
+async function readDocxParagraphs(arrayBuffer){
+  var bytes = new Uint8Array(arrayBuffer);
+  var entries = readZipEntries(bytes, ["word/document.xml","word/styles.xml"]);
+  if(!entries["word/document.xml"]) throw new Error("no document.xml");
+  var docXml = await extractXml(bytes, entries["word/document.xml"]);
+  var stylesXml = entries["word/styles.xml"] ? await extractXml(bytes, entries["word/styles.xml"]) : "";
+  return readDocParagraphs(docXml, buildStyleMap(stylesXml));
+}
+
+function parseParagraphs(paras){
+  var questions = [], cur = null;
+  function pushCur(){ if(cur && cur.choices.length) questions.push(cur); cur = null; }
+  for(var i = 0; i < paras.length; i++){
+    var text = paras[i].text; if(!text) continue;
+    var bold = paras[i].bold;
+    var choiceMatch = text.match(CHOICE_RE);
+    var ansMatch = text.match(ANSWER_RE);
+    if(ansMatch && (!choiceMatch || choiceMatch[2].trim() === "")){
+      if(cur) cur.answerLetter = ansMatch[1].toUpperCase();
+      continue;
+    }
+    if(choiceMatch){
+      if(!cur) cur = { stem:"", choices:[], answerLetter:null };
+      var star = /^\s*\*/.test(text) || /\*\s*$/.test(text);
+      var clean = choiceMatch[2].replace(/^\*\s*/, "").replace(/\s*\*\s*$/, "").trim();
+      cur.choices.push({ text:clean, bold:bold, star:star });
+      continue;
+    }
+    if(cur && cur.choices.length) pushCur();
+    if(!cur) cur = { stem:text.replace(QNUM_RE, ""), choices:[], answerLetter:null };
+    else cur.stem = (cur.stem ? cur.stem + " " : "") + text.replace(QNUM_RE, "");
+  }
+  pushCur();
+  return questions.map(function(q, i){
+    return { id:i, stem:q.stem, choices:q.choices, answerLetter:q.answerLetter, include:true };
+  });
+}
+function detectCorrect(q, mode){
+  var idx = -1;
+  if(mode === "bold" || mode === "auto") idx = q.choices.findIndex(function(c){ return c.bold; });
+  if(idx < 0 && (mode === "asterisk" || mode === "auto")) idx = q.choices.findIndex(function(c){ return c.star; });
+  if(idx < 0 && (mode === "answerline" || mode === "auto") && q.answerLetter){
+    var t = q.answerLetter.charCodeAt(0) - 65;
+    if(t >= 0 && t < q.choices.length) idx = t;
+  }
+  return idx;
+}
+function shuffled(arr){
+  var a = arr.slice();
+  for(var i = a.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+function esc(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+
+/* ---------------- state ---------------- */
+var state = {
+  stage:"upload", fileName:"", error:"", busy:false, rawText:"",
+  questions:[], correct:{}, mode:"auto",
+  shuffleQ:true, shuffleC:true, numVersions:2, title:"Test", versions:[]
+};
+
+/* ---------------- views ---------------- */
+function uploadView(){
+  var raw = state.rawText ? '<details><summary>Raw text that was read</summary><pre>' + esc(state.rawText) + '</pre></details>' : '';
+  var err = state.error ? '<div class="alert">' + esc(state.error) + '</div>' : '';
+  return ''
+    + '<label class="dropzone" id="dropzone" for="file">'
+    +   '<div class="dz-main">' + (state.busy ? "Reading your file&hellip;" : "Choose a Word (.docx) file") + '</div>'
+    +   '<div class="dz-sub">or drag it onto this box</div>'
+    +   '<input id="file" type="file" accept=".docx" style="display:none" />'
+    + '</label>'
+    + '<div class="note">Nothing you upload leaves your computer.</div>'
+    + err + raw
+    + '<div class="help card" style="margin-top:32px">'
+    +   '<p style="margin:0"><b>How to format your questions</b></p>'
+    +   '<p>Number each question, then list choices labeled A, B, C&hellip; Mark the correct answer any one of these ways:</p>'
+    +   '<ul style="margin:8px 0 0;padding-left:20px">'
+    +     '<li><b>Bold</b> the correct choice</li>'
+    +     '<li>Put an asterisk on it, e.g. <code>*B) Paris</code></li>'
+    +     '<li>Add a line after the choices: <code>Answer: B</code></li>'
+    +   '</ul>'
+    +   '<p style="margin-top:8px">Whatever it reads, you can fix any answer by hand on the next screen.</p>'
+    + '</div>';
+}
+
+function opt(v, label){
+  return '<option value="' + v + '"' + (state.mode === v ? " selected" : "") + '>' + label + '</option>';
+}
+
+function reviewView(){
+  var included = state.questions.filter(function(q){ return q.include; });
+  var undetected = included.filter(function(q){ return (state.correct[q.id] == null ? -1 : state.correct[q.id]) < 0; }).length;
+  var badge = undetected > 0 ? '<div class="badge">' + undetected + ' without a marked answer</div>' : '';
+  var modeSel = ''
+    + '<div class="row" style="margin-left:auto">'
+    +   '<span class="muted" style="font-size:14px">Answers marked by:</span>'
+    +   '<select id="mode">'
+    +     opt("auto","Auto-detect") + opt("bold","Bold choice") + opt("asterisk","Asterisk") + opt("answerline",'"Answer:" line')
+    +   '</select>'
+    + '</div>';
+
+  var list = state.questions.map(function(q, qi){
+    var ci = state.correct[q.id] == null ? -1 : state.correct[q.id];
+    var choices = q.choices.map(function(c, idx){
+      var correct = idx === ci ? " correct" : "";
+      return '<button class="choice' + correct + '" data-action="choice" data-q="' + q.id + '" data-idx="' + idx + '">'
+           +   '<span class="pill">' + LETTERS[idx] + '</span>' + esc(c.text)
+           + '</button>';
+    }).join("");
+    var warn = ci < 0 ? '<div class="unmarked">No answer marked &mdash; click the correct one.</div>' : '';
+    return '<div class="q' + (q.include ? "" : " excluded") + '">'
+      + '<div class="q-top">'
+      +   '<input type="checkbox" data-action="include" data-q="' + q.id + '"' + (q.include ? " checked" : "") + ' style="margin-top:3px" />'
+      +   '<div style="flex:1">'
+      +     '<div class="q-stem">' + (qi + 1) + '. ' + esc(q.stem) + '</div>'
+      +     '<div class="choices">' + choices + '</div>' + warn
+      +   '</div>'
+      + '</div></div>';
+  }).join("");
+
+  return ''
+    + '<div class="card"><div class="row">'
+    +   '<div class="count" style="font-size:14px;color:#475569"><b>' + included.length + '</b> questions from <b>' + esc(state.fileName) + '</b></div>'
+    +   badge + modeSel
+    + '</div></div>'
+    + '<p class="muted" style="font-size:14px;margin:16px 0 8px">Check each correct answer (green). Click a different choice to change it, or uncheck a question to leave it out.</p>'
+    + '<div>' + list + '</div>'
+    + '<div class="bar"><div class="row">'
+    +   '<label class="inline"><span class="muted">Test title</span><input id="title" type="text" value="' + esc(state.title) + '" /></label>'
+    +   '<label class="inline"><span class="muted">Versions</span><input id="numVersions" type="number" min="1" max="8" value="' + state.numVersions + '" /></label>'
+    +   '<label class="inline"><input type="checkbox" id="shuffleQ"' + (state.shuffleQ ? " checked" : "") + ' /> Shuffle question order</label>'
+    +   '<label class="inline"><input type="checkbox" id="shuffleC"' + (state.shuffleC ? " checked" : "") + ' /> Shuffle choices</label>'
+    +   '<button class="btn btn-primary spacer" data-action="generate"' + (included.length === 0 ? " disabled" : "") + '>Generate ' + state.numVersions + ' version' + (state.numVersions > 1 ? "s" : "") + '</button>'
+    + '</div></div>';
+}
+
+function outputView(){
+  var sheets = state.versions.map(function(items, vi){
+    var qs = items.map(function(it, qi){
+      var ch = it.choices.map(function(c, idx){
+        return '<div><b>' + LETTERS[idx] + '.</b> ' + esc(c.text) + '</div>';
+      }).join("");
+      return '<li class="keep"><div style="font-weight:600">' + (qi + 1) + '. ' + esc(it.stem) + '</div>'
+           + '<div class="echoices">' + ch + '</div></li>';
+    }).join("");
+    return '<div class="sheet exam">'
+      + '<div class="sheet-head"><div class="sheet-title">' + esc(state.title) + ' &mdash; Version ' + vLabel(vi) + '</div>'
+      +   '<div class="muted" style="font-size:14px">Name: ______________________</div></div>'
+      + '<ol>' + qs + '</ol></div>';
+  }).join("");
+
+  var keys = state.versions.map(function(items, vi){
+    var cells = items.map(function(it, qi){
+      return '<div>' + (qi + 1) + '. <b>' + (it.correct >= 0 ? LETTERS[it.correct] : "&mdash;") + '</b></div>';
+    }).join("");
+    return '<div class="keep"><div style="font-weight:600;margin-bottom:8px">Version ' + vLabel(vi) + '</div>'
+         + '<div class="keycols">' + cells + '</div></div>';
+  }).join("");
+
+  return ''
+    + '<div class="out-tools no-print">'
+    +   '<button class="link" data-action="back">&larr; Back to questions</button>'
+    +   '<button class="btn btn-ghost" data-action="reshuffle">Reshuffle</button>'
+    +   '<button class="btn btn-primary spacer" data-action="print">Print / Save as PDF</button>'
+    + '</div>'
+    + sheets
+    + '<div class="sheet exam"><div class="sheet-title" style="border-bottom:1px solid #cbd5e1;padding-bottom:12px;margin-bottom:16px">'
+    +   esc(state.title) + ' &mdash; Answer keys</div>'
+    +   '<div class="keygrid">' + keys + '</div></div>';
+}
+
+/* ---------------- actions ---------------- */
+function render(){
+  var app = document.getElementById("app");
+  if(state.stage === "upload") app.innerHTML = uploadView();
+  else if(state.stage === "review") app.innerHTML = reviewView();
+  else app.innerHTML = outputView();
+  document.getElementById("startover").style.display = state.stage === "upload" ? "none" : "";
+}
+
+async function handleFile(file){
+  if(!file) return;
+  state.busy = true; state.error = ""; render();
+  try{
+    var buf = await file.arrayBuffer();
+    var paras;
+    try{
+      paras = await readDocxParagraphs(buf);
+    }catch(e){
+      state.busy = false;
+      state.error = "This browser couldn't open the Word file (it may be too old). Try a current Chrome, Edge, Firefox, or Safari.";
+      render(); return;
+    }
+    var qs = parseParagraphs(paras);
+    state.rawText = paras.map(function(p){ return p.text; }).join("\n");
+    state.fileName = file.name;
+    if(!qs.length){
+      state.error = "Couldn't find any multiple-choice questions in that file. Check the raw text below to see what was read, then confirm your formatting.";
+      state.questions = []; state.stage = "upload";
+    }else{
+      var c = {};
+      qs.forEach(function(q){ c[q.id] = detectCorrect(q, state.mode); });
+      state.questions = qs; state.correct = c; state.stage = "review"; state.error = "";
+    }
+  }catch(e){
+    state.error = "That file couldn't be read. It needs to be a .docx (not the older .doc) file.";
+  }finally{
+    state.busy = false; render();
+  }
+}
+
+function applyMode(m){
+  state.mode = m;
+  var c = {};
+  state.questions.forEach(function(q){ c[q.id] = detectCorrect(q, m); });
+  state.correct = c; render();
+}
+
+function generate(){
+  var base = state.questions.filter(function(q){ return q.include; });
+  var out = [];
+  for(var v = 0; v < state.numVersions; v++){
+    var order = state.shuffleQ ? shuffled(base) : base;
+    var items = order.map(function(q){
+      var ci = state.correct[q.id] == null ? -1 : state.correct[q.id];
+      var tagged = q.choices.map(function(c, idx){
+        return { text:c.text, wasCorrect: idx === ci };
+      });
+      var arranged = state.shuffleC ? shuffled(tagged) : tagged;
+      var newCorrect = arranged.findIndex(function(c){ return c.wasCorrect; });
+      return { stem:q.stem, choices:arranged, correct:newCorrect };
+    });
+    out.push(items);
+  }
+  state.versions = out; state.stage = "output"; render();
+}
+
+function reset(){
+  state.stage = "upload"; state.questions = []; state.versions = [];
+  state.correct = {}; state.fileName = ""; state.error = ""; state.rawText = "";
+  render();
+}
+
+/* ---------------- wiring (event delegation) ---------------- */
+var app = document.getElementById("app");
+app.addEventListener("click", function(e){
+  var t = e.target.closest("[data-action]");
+  if(!t) return;
+  var a = t.getAttribute("data-action");
+  if(a === "choice"){
+    state.correct[+t.getAttribute("data-q")] = +t.getAttribute("data-idx");
+    render();
+  }else if(a === "generate" || a === "reshuffle"){
+    generate();
+  }else if(a === "back"){
+    state.stage = "review"; render();
+  }else if(a === "print"){
+    window.print();
+  }
+});
+app.addEventListener("change", function(e){
+  var el = e.target;
+  if(el.id === "file"){ handleFile(el.files && el.files[0]); }
+  else if(el.id === "mode"){ applyMode(el.value); }
+  else if(el.getAttribute && el.getAttribute("data-action") === "include"){
+    var id = +el.getAttribute("data-q");
+    state.questions = state.questions.map(function(q){
+      return q.id === id ? Object.assign({}, q, { include: !q.include }) : q;
+    });
+    render();
+  }else if(el.id === "shuffleQ"){ state.shuffleQ = el.checked; }
+  else if(el.id === "shuffleC"){ state.shuffleC = el.checked; }
+});
+app.addEventListener("input", function(e){
+  var el = e.target;
+  if(el.id === "title"){ state.title = el.value; }
+  else if(el.id === "numVersions"){
+    var n = Math.max(1, Math.min(8, parseInt(el.value, 10) || 1));
+    state.numVersions = n;
+    var btn = app.querySelector('[data-action="generate"]');
+    if(btn) btn.textContent = "Generate " + n + " version" + (n > 1 ? "s" : "");
+  }
+});
+app.addEventListener("dragover", function(e){
+  if(state.stage !== "upload") return;
+  e.preventDefault();
+  var dz = document.getElementById("dropzone"); if(dz) dz.classList.add("drag");
+});
+app.addEventListener("dragleave", function(e){
+  var dz = document.getElementById("dropzone"); if(dz) dz.classList.remove("drag");
+});
+app.addEventListener("drop", function(e){
+  if(state.stage !== "upload") return;
+  e.preventDefault();
+  var dz = document.getElementById("dropzone"); if(dz) dz.classList.remove("drag");
+  handleFile(e.dataTransfer.files && e.dataTransfer.files[0]);
+});
+document.getElementById("startover").addEventListener("click", reset);
+
+render();
+</script>
+</body>
+</html>
